@@ -2,6 +2,7 @@ package controller
 
 import (
 	"Gin-HATTS/common"
+	"Gin-HATTS/dto"
 	"Gin-HATTS/model"
 	"Gin-HATTS/response"
 	"github.com/gin-gonic/gin"
@@ -30,16 +31,13 @@ func Register(ctx *gin.Context) {
 
 	//判断账号是否存在
 	if isEmailExist(db, email) {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{
-			"code": 422,
-			"msg": "用户已存在",
-		})
+		response.Response(ctx, http.StatusUnprocessableEntity, 422, nil, "用户已存在")
 		return
 	}
 	//创建用户
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		response.Response(ctx, http.StatusUnprocessableEntity, 500, nil, "加密失败")
+		response.Response(ctx, http.StatusInternalServerError, 500, nil, "加密失败")
 		return
 	}
 	newUser := model.User{
@@ -68,11 +66,23 @@ func Login(ctx *gin.Context) {
 	}
 	// 判断密码是否正确
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) ; err != nil {
-		response.Response(ctx, http.StatusUnprocessableEntity, 400, nil,"密码错误")
+		response.Response(ctx, http.StatusBadRequest, 400, nil, "密码错误")
 		return
 	}
 	// 发放token
-	token := "11"
+	token, err := common.ReleaseToken(user)
+	if err != nil {
+		response.Response(ctx, http.StatusInternalServerError, 500, nil, "token发放异常")
+		return
+	}
 	//返回结果
 	response.Success(ctx, gin.H{"token":token}, "登录成功")
+}
+
+func Info(ctx *gin.Context) {
+	user, _ := ctx.Get("user")
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": gin.H{"user": dto.ToUserDto(user.(model.User))},
+	})
 }

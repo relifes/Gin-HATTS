@@ -1,0 +1,9 @@
+server:
+  port: 8000
+datasource:
+  host: localhost
+  port: 3306
+  database: hatts
+  username: root
+  password: 456852Ss
+  charset: utf8mb4
